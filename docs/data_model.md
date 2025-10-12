@@ -47,11 +47,3 @@ erDiagram
 - User model: `app/db/models/user.py`
 - Subscription model: `app/db/models/subscription.py`
 
----
-
-## Rendered diagram
-
-If your markdown renderer does not process Mermaid, a rendered SVG is included below:
-
-![Data model diagram](./data_model.svg)
-
