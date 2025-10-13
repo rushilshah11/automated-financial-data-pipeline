@@ -37,13 +37,13 @@ class AuthHandler(object):
     @staticmethod
     def decode_token(token: str) -> dict:
         try:
+            print("Decoding token:", token)
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-            # Return payload only if not expired (jwt.decode will already
-            # raise for expired tokens depending on options; we defensively
-            # check exp here too).
-            return payload if payload.get('exp', 0) >= time.time() else None
-        except Exception:
-            # In production you'd probably raise a typed exception and
-            # enable structured logging. For the tutorial, we keep it simple.
-            print("Token decode error")
+            print("Decoded payload:", payload)
+            if "exp" not in payload:
+                print("Missing exp in token")
+                return None
+            return payload if payload["exp"] >= time.time() else None
+        except Exception as e:
+            print("Token decode error:", e)
             return None

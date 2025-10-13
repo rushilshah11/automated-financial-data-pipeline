@@ -16,6 +16,7 @@ don't run expensive or blocking actions at import time.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from app.util.init_db import create_tables  # async create_tables called by lifespan
+from fastapi.security import HTTPBearer
 from app.routers.auth import auth_router
 from app.routers.subscription import subscription_router
 from app.util.protect_route import get_current_user
@@ -37,7 +38,13 @@ async def lifespan(app: FastAPI):
 
 
 # The FastAPI instance must be named `app` so tests and uvicorn can import it.
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    version="1.0",
+    swagger_ui_oauth2_redirect_url=None,
+)
+
+security = HTTPBearer()
 
 # Mount the auth router under /auth (register, login)
 app.include_router(router=auth_router, tags=["auth"], prefix="/auth")

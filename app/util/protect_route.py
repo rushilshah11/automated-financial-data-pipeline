@@ -9,6 +9,7 @@ If anything goes wrong the dependency raises HTTP 401 Unauthorized.
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Union
 from app.core.security.authHandler import AuthHandler
 from app.service.user_service import UserService
@@ -16,26 +17,22 @@ from app.core.database import get_db
 from app.db.schemas.user_schema import UserOutput
 
 
+security = HTTPBearer()
 AUTH_PREFIX = "Bearer "
 
 
 def get_current_user(
-        authorization: Annotated[Union[str, None], Header()] = None, session: Session = Depends(get_db)
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        session: Session = Depends(get_db),
 ) -> UserOutput:
+
     auth_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired token. Please log in again.",
-        headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # Basic header checks
-    if not authorization:
-        raise auth_exception
-    if not authorization.startswith(AUTH_PREFIX):
-        raise auth_exception
-
-    # Decode the token and ensure it contains a user_id
-    payload = AuthHandler.decode_token(authorization[len(AUTH_PREFIX):])
+    token = credentials.credentials  # automatically extracts token after "Bearer "
+    payload = AuthHandler.decode_token(token=token[len(AUTH_PREFIX):])
 
     if payload and payload.get("user_id"):
         try:
@@ -53,3 +50,9 @@ def get_current_user(
 
     # Token invalid or missing required claims
     raise auth_exception
+
+
+
+
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozNSwiZXhwIjoxNzYwMzI5ODA3LjQ5NTA2OX0.PYH62KxUVeHUtREmdarwyKa4hoeol6KvdtivZmCDd3w
+
