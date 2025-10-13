@@ -114,7 +114,7 @@ def test_login_nonexistent_email(client: TestClient):
 
 def test_protected_missing_token(client: TestClient):
     r = client.get("/protected")
-    assert r.status_code == 401
+    assert r.status_code == 403
 
 
 def test_protected_invalid_token(client: TestClient):

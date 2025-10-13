@@ -51,3 +51,4 @@ websockets==15.0.1
 charset_normalizer==3.4.3
 finnhub-python==2.4.25 
 requests==2.32.5
+pytest-asyncio=1.2.0

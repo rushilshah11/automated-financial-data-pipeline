@@ -17,7 +17,7 @@ class StockQuoteOutput(BaseModel):
 
     timestamp: int = Field(..., alias='t')
 
-    class Config:
+    class ConfigDict:
         # Allows Pydantic to map the JSON keys ('c', 'h', etc.) to Python field names (current_price)
         populate_by_name = True
 
@@ -25,19 +25,15 @@ class CompanyProfileOutput(BaseModel):
     """
     Represents the simplified company profile response from Finnhub's /stock/profile2 endpoint.
     """
-    name: str = Field(..., alias='name')
-    ticker: str = Field(..., alias='ticker')
-    exchange: str = Field(..., alias='exchange')
-    ipo: str = Field(..., alias='ipo')
-    phone: str = Field(..., alias='phone')
-    market_cap: float = Field(..., alias='marketCapitalization')
-    share_outstanding: float = Field(..., alias='shareOutstanding')
-    logo_url: str = Field(..., alias='logo')
-    web_url: str = Field(..., alias='weburl')
-    industry: str = Field(..., alias='industry')
-    country: str = Field(..., alias='country')
-    currency: str = Field(..., alias='currency')
-
-    class Config:
-        # Allows Pydantic to map the JSON keys to Python field names
-        populate_by_name = True
+    country: str
+    currency: str
+    exchange: str
+    finnhubIndustry: Optional[str] = None  # make optional
+    ipo: Optional[str] = None
+    logo: Optional[str] = None
+    marketCapitalization: Optional[float] = None
+    name: str
+    phone: Optional[str] = None
+    shareOutstanding: Optional[float] = None
+    ticker: str
+    weburl: Optional[str] = None

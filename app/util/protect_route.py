@@ -18,8 +18,6 @@ from app.db.schemas.user_schema import UserOutput
 
 
 security = HTTPBearer()
-AUTH_PREFIX = "Bearer "
-
 
 def get_current_user(
         credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -30,26 +28,34 @@ def get_current_user(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired token. Please log in again.",
     )
+    try:
 
-    token = credentials.credentials  # automatically extracts token after "Bearer "
-    payload = AuthHandler.decode_token(token=token[len(AUTH_PREFIX):])
+        if not credentials or not credentials.credentials:
+            raise auth_exception
 
-    if payload and payload.get("user_id"):
-        try:
-            user = UserService(session=session).get_user_by_id(payload["user_id"])
-            # Return a Pydantic object (safe for JSON serialization)
-            return UserOutput(
-                id=user.id,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                email=user.email
-            )
-        except Exception as e:
-            print(f"Error fetching user: {e}")
-            raise e
+        token = credentials.credentials  # automatically extracts token after "Bearer "
+        payload = AuthHandler.decode_token(token)
 
-    # Token invalid or missing required claims
-    raise auth_exception
+        if not payload or not payload.get("user_id"):
+            raise auth_exception
+
+        if payload and payload.get("user_id"):
+            try:
+                user = UserService(session=session).get_user_by_id(payload["user_id"])
+                # Return a Pydantic object (safe for JSON serialization)
+                return UserOutput(
+                    id=user.id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    email=user.email
+                )
+            except Exception as e:
+                print(f"Error fetching user: {e}")
+                raise e
+            
+    except Exception:
+        # Token invalid or missing required claims
+        raise auth_exception
 
 
 

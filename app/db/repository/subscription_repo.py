@@ -3,7 +3,7 @@ from app.db.repository.base import BaseRepository
 from app.db.models.subscription import Subscription
 from app.db.schemas.subscription_schema import SubscriptionAdd
 from typing import List
-
+from sqlalchemy import func, distinct # New imports needed for distinct
 
 class SubscriptionRepository(BaseRepository):
 	"""Repository for subscription-related DB operations.
@@ -55,3 +55,13 @@ class SubscriptionRepository(BaseRepository):
 			.first()
 		)
 		return bool(exists)
+    
+    # NEW METHOD
+	def get_all_unique_tickers(self) -> List[str]:
+		"""Return a list of all unique ticker symbols subscribed to."""
+		tickers = (
+			self.session.query(distinct(Subscription.ticker))
+			.all()
+		)
+		# Flatten the list of single-item tuples: [('AAPL',), ('GOOG',)] -> ['AAPL', 'GOOG']
+		return [t[0] for t in tickers]

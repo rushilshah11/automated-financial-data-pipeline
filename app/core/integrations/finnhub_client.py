@@ -44,7 +44,7 @@ class FinnhubClient:
         """
         return await asyncio.to_thread(func, *args, **kwargs)
 
-    async def get_stock_quote(self, symbol: str) -> Dict[str, Any]:
+    async def get_stock_quote(self, symbol: str) -> StockQuoteOutput | None:
         """
         Response Attributes:
             c: Current price, d: Change, dp: Percent change, h: High price of the day, l: Low price of the day, o: Open price of the day, pc: Previous close price, pc: Previous close price
@@ -58,14 +58,13 @@ class FinnhubClient:
             # Using model_validate for Pydantic v2 compatibility.
             try:
                 return StockQuoteOutput.model_validate(quote)
-            except Exception:
-                # If validation fails, fall back to returning the raw dict
-                return quote
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Coult not validate Pydantic StockQuote Schema: {e}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Finnhub quote fetch failed: {e}")
 
 
-    async def get_company_profile(self, symbol: str) -> Dict[str, Any]:
+    async def get_company_profile(self, symbol: str) -> CompanyProfileOutput | None:
         """
         Response Attributes:
             country: Country of company's headquarter.
@@ -88,8 +87,8 @@ class FinnhubClient:
                 raise HTTPException(status_code=404, detail=f"Profile for symbol '{symbol}' not found.")
             try:
                 return CompanyProfileOutput.model_validate(profile)
-            except Exception:
-                return profile
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Coult not validate Pydantic CompanyProfile Schema: {e}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Finnhub profile fetch failed: {e}")
 

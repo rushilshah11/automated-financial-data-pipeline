@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str 
 
+    EMAIL_HOST: str
+    EMAIL_PORT: int 
+    EMAIL_USER: str
+    EMAIL_PASSWORD: str 
+    EMAIL_FROM_ADDRESS: str 
+
     # Pydantic setting to specify where to read environment variables from
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
