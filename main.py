@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from app.util.init_db import create_tables  # async create_tables called by lifespan
 from app.routers.auth import auth_router
+from app.routers.subscription import subscription_router
 from app.util.protect_route import get_current_user
 from app.db.schemas.user_schema import UserOutput
 
@@ -40,6 +41,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Mount the auth router under /auth (register, login)
 app.include_router(router=auth_router, tags=["auth"], prefix="/auth")
+app.include_router(router=subscription_router, tags=["subscriptions"], prefix="/subscriptions")
 
 
 @app.get("/health")

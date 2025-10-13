@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URL: str 
     
     # You can also define other keys you need
-    # FINNHUB_API_KEY: str 
+    FINNHUB_API_KEY: str
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str 
 

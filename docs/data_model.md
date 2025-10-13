@@ -46,4 +46,3 @@ erDiagram
 
 - User model: `app/db/models/user.py`
 - Subscription model: `app/db/models/subscription.py`
-

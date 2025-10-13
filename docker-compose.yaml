@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  # -----------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # -----------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    # Environment variables are loaded from the .env file.
+    # Note: POSTGRES_PASSWORD is set directly here to 'password' in the .env,
+    # but the service also has an explicitly set environment variable below.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      # The value 'password' must match the password used in the 'app' service connection string.
+      # You should update your .env file to match the password here, or update this to match your .env.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB} # Hardcoded DB name inside the container
+    ports:
+      # Map the container port 5432 to host port 5433 for DBeaver access
+      # You can change the host port if 5432 is in use, e.g., "5433:5432"
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"] # Use env var
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # -----------------------------------------------------------------
+  # 2. FastAPI Application Service
+  # -----------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi_app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      # Use the Docker service name 'db' and the internal Postgres port 5432 for inter-container comms.
+      # This overrides the SQLALCHEMY_DATABASE_URL from .env which may point to a host/port
+      # intended for host-side tools (like DBeaver).
+      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  postgres_data:
