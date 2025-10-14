@@ -180,6 +180,14 @@ class EmailService:
         # Convert dict to JSON bytes (use indent=2 for human readability in S3)
         try:
             log_bytes = json.dumps(log_data, indent=2).encode('utf-8')
-            self._s3_client.upload_log(log_key, log_bytes)
+
+            s3_status = self._s3_client.upload_log(log_key, log_bytes)
+
+            # Check the status string for the successful prefix "s3://"
+            if s3_status.startswith("s3://"):
+                logger.info("Daily pipeline summary successfully uploaded. URL: %s", s3_status)
+            else:
+                # The S3 client returned the error string, log the full failure detail
+                logger.error("S3 upload FAILED for log_key: %s. Detail: %s", log_key, s3_status) 
         except Exception as e:
             logger.error("Failed to generate or upload pipeline summary log: %s", e)

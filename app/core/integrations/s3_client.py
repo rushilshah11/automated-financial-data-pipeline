@@ -16,8 +16,8 @@ class S3Client:
         try:
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
-                key=key,
-                body=data,
+                Key=key,
+                Body=data,
                 ContentType='application/json'
             )
 
