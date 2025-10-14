@@ -6,6 +6,7 @@ customized updates to subscribed users. It uses Pydantic models for type safety
 when handling financial data.
 """
 
+from datetime import datetime, timezone
 from typing import Dict, Any, Union
 from sqlalchemy.orm import Session
 import asyncio
@@ -17,6 +18,8 @@ from app.core.integrations.finnhub_client import FinnhubClient
 from app.core.integrations.email_client import EmailClient
 from app.db.models.user import User
 from app.core.integrations.finnhub_schema import StockQuoteOutput, CompanyProfileOutput
+import json
+from app.core.integrations.s3_client import S3Client
 
 
 # Initialize logger for this module
@@ -32,6 +35,7 @@ class EmailService:
         self._user_repo = UserRepository(session)
         self._finnhub_client = FinnhubClient()
         self._email_client = EmailClient()
+        self._s3_client = S3Client()
 
     async def _fetch_all_stock_data(self) -> FinancialData:
         """
@@ -109,19 +113,24 @@ class EmailService:
         """
         Main function to orchestrate the daily update process.
         """
+        start_time = datetime.now(timezone.utc)
+        emails_sent_count = 0
+
         # 1. Aggregate financial data (contains Pydantic models)
         all_stock_data = await self._fetch_all_stock_data()
-        count = 0
+        unique_tickers = self._sub_repo.get_all_unique_tickers()
         
         if not all_stock_data:
-            return
+            self._log_pipeline_summary(start_time, 0, unique_tickers, "no_data_fetched")
+            return 0
 
         # 2. Get all users who have subscriptions
         users_with_subscriptions = self._user_repo.get_users_for_email_dispatch()
         
         if not users_with_subscriptions:
+            self._log_pipeline_summary(start_time, 0, unique_tickers, "no_data_fetched")
             logger.info("No users with active subscriptions found. Dispatch complete.")
-            return
+            return 0
 
         logger.info("Found %d users to send emails to.", len(users_with_subscriptions))
 
@@ -133,15 +142,44 @@ class EmailService:
                 first_name = user.first_name if user.first_name else "Valued Customer"
                 
                 # Pass Pydantic models to the email client
-                self._email_client.send_stock_update(
+                status = self._email_client.send_stock_update(
                     recipient_email=user.email,
                     first_name=first_name,
                     user_subscribed_data=user_data_to_send
                 )
-                count += 1
-                logger.debug("Successfully dispatched email for user: %s", user.email)
+
+                if status:
+                    emails_sent_count += 1
+                    logger.debug("Successfully dispatched email for user: %s", user.email)
+                else:
+                    logger.error("Failed to dispatch email to user: %s", user.email)
             else:
                 logger.warning("Skipping email for user %s: no valid data found for subscribed tickers.", user.email)
                 
-        logger.info("Daily email dispatch completed.")
-        return count
+        logger.info("Daily email dispatch completed. Sent %d emails.", emails_sent_count)
+        self._log_pipeline_summary(start_time, emails_sent_count, unique_tickers, "success")
+        return emails_sent_count
+    
+    def _log_pipeline_summary(self, start_time: datetime, emails_sent: int, tickers_processed: list[str], status: str):
+        """Helper function to build and upload the summary log to S3."""
+        end_time = datetime.now(timezone.utc)
+        today_date = start_time.strftime("%Y-%m-%d")
+
+        log_data = {
+            "date": today_date,
+            "timestamp_utc_start": start_time.isoformat(),
+            "timestamp_utc_end": end_time.isoformat(),
+            "emails_sent": emails_sent,
+            "tickers_processed": tickers_processed,
+            "status": status,
+        }
+
+        # Construct key: daily_logs/DATE.json
+        log_key = f"daily_logs/{today_date}.json"
+
+        # Convert dict to JSON bytes (use indent=2 for human readability in S3)
+        try:
+            log_bytes = json.dumps(log_data, indent=2).encode('utf-8')
+            self._s3_client.upload_log(log_key, log_bytes)
+        except Exception as e:
+            logger.error("Failed to generate or upload pipeline summary log: %s", e)

@@ -10,6 +10,7 @@ import logging # New import for logging
 from pydantic import EmailStr
 from app.settings import settings
 from app.core.integrations.finnhub_schema import StockQuoteOutput, CompanyProfileOutput 
+import boto3
 
 
 # Initialize logger for this module
@@ -21,6 +22,12 @@ FinancialData = Dict[str, Dict[str, Union[StockQuoteOutput, CompanyProfileOutput
 
 class EmailClient:
     def __init__(self):
+        self.ses_client = boto3.client(
+            'ses',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_REGION_NAME
+        )
         self.sender_email = settings.EMAIL_FROM_ADDRESS
 
     def _format_message(self, first_name: str, stock_data: FinancialData) -> str:
@@ -64,14 +71,17 @@ class EmailClient:
         subject = "Your Daily Financial Data Update"
         body = self._format_message(first_name, user_subscribed_data)
 
-        # Log the mock email contents using INFO level
-        logger.info("="*50)
-        logger.info("MOCK EMAIL DISPATCH")
-        logger.info("Sending to: %s", recipient_email)
-        logger.info("From: %s", self.sender_email)
-        logger.info("Subject: %s", subject)
-        # Logging the full body at DEBUG level is often preferred, but INFO is kept for visibility in mock environment
-        logger.info("\n%s", body) 
-        logger.info("="*50)
-
-        return True
+        try:
+            response = self.ses_client.send_email(
+                Source=self.sender_email,
+                Destination={'ToAddresses': [recipient_email]},
+                Message={
+                    'Subject': {'Data': subject},
+                    'Body': {'Text': {'Data': body}}
+                }
+            )
+            logger.info("SES email dispatched. Message ID: %s", response['MessageId'])
+            return True
+        except Exception as e:
+            logger.error("SES email dispatch failed for %s: %s", recipient_email, e)
+            return False

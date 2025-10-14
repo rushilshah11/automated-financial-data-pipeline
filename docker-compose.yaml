@@ -51,10 +51,29 @@ services:
       FINNHUB_API_KEY: ${FINNHUB_API_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION_NAME: ${AWS_REGION_NAME}
     depends_on:
       db:
         condition: service_healthy
     restart: on-failure
+
+  email_dispatch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m app.scripts.daily_dispatch
+    environment:
+      SQLALCHEMY_DATABASE_URL: ${SQLALCHEMY_DATABASE_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AWS_REGION_NAME: ${AWS_REGION_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

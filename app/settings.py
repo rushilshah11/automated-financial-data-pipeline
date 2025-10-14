@@ -14,15 +14,17 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str 
-
-    EMAIL_HOST: str
-    EMAIL_PORT: int 
-    EMAIL_USER: str
-    EMAIL_PASSWORD: str 
+    
     EMAIL_FROM_ADDRESS: str 
+
+    S3_BUCKET_NAME: str
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_REGION_NAME: str
 
     # Pydantic setting to specify where to read environment variables from
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
+
 
 # Create the final settings instance
 settings = Settings()
