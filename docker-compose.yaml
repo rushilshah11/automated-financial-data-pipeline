@@ -47,7 +47,7 @@ services:
       # Use the Docker service name 'db' and the internal Postgres port 5432 for inter-container comms.
       # This overrides the SQLALCHEMY_DATABASE_URL from .env which may point to a host/port
       # intended for host-side tools (like DBeaver).
-      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       FINNHUB_API_KEY: ${FINNHUB_API_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: ${JWT_ALGORITHM}

@@ -37,4 +37,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION_NAME: ${{ secrets.AWS_REGION_NAME }}
           
-        run: python app/scripts/daily_dispatch.py
+        run: python -m app.scripts.daily_dispatch
