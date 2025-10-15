@@ -9,15 +9,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
-    # STEP 1: Define the temporary, isolated PostgreSQL service
     services:
       postgres:
-        image: postgres:15-alpine 
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: ci_test_user
           POSTGRES_PASSWORD: ci_test_password
           POSTGRES_DB: ci_test_db
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U ci_test_user -d ci_test_db"
           --health-interval 5s
@@ -26,55 +26,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      # Caching is a great addition for faster runs!
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      # Robust Wait Loop (Excellent addition to fix resolution errors)
-      - name: Wait for Postgres to be ready
-        run: |
-          for i in {1..10}; do
-            # Check if Postgres client tools are available (since pg_isready is used)
-            if ! command -v pg_isready &> /dev/null; then
-              echo "pg_isready not found. Attempting to install postgresql-client..."
-              sudo apt-get update && sudo apt-get install -y postgresql-client
-              break # Exit install loop and continue to the check
-            fi
-
-            if pg_isready -h postgres -U ci_test_user; then
-              echo "Postgres is ready!"
-              exit 0 # Success, exit step
-            fi
-            echo "Waiting for Postgres ($i/10)..."
-            sleep 2
-          done
-          
-          # Enhancement: If the loop finishes without success, force the job to fail.
-          if ! pg_isready -h postgres -U ci_test_user; then
-             echo "ERROR: Postgres failed to start after multiple attempts."
-             exit 1 
-          fi
-
+      - run: pip install -r requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Run tests
         env:
-          # All 9 environment variables are correctly injected to pass Pydantic validation
           SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_test_user:ci_test_password@postgres:5432/ci_test_db
           JWT_SECRET_KEY: "super-secret-ci-key"
           JWT_ALGORITHM: "HS256"
@@ -84,5 +43,12 @@ jobs:
           AWS_ACCESS_KEY_ID: "dummy-key-id"
           AWS_SECRET_ACCESS_KEY: "dummy-secret-key"
           AWS_REGION_NAME: "us-east-1"
-          
-        run: pytest -v
+        run: |
+          echo "Waiting for Postgres to start..."
+          for i in {1..15}; do
+            pg_isready -h postgres -U ci_test_user -d ci_test_db && break
+            echo "Postgres not ready yet ($i/15)..."
+            sleep 3
+          done
+          pg_isready -h postgres -U ci_test_user -d ci_test_db || (echo "Postgres failed to start" && exit 1)
+          pytest -v
