@@ -12,7 +12,6 @@ Routes:
 Keep side-effects (like DB creation) inside the lifespan so test imports
 don't run expensive or blocking actions at import time.
 """
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from app.util.init_db import create_tables  # async create_tables called by lifespan
@@ -21,7 +20,6 @@ from app.routers.auth import auth_router
 from app.routers.subscription import subscription_router
 from app.util.protect_route import get_current_user
 from app.db.schemas.user_schema import UserOutput
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
