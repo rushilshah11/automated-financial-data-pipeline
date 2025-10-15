@@ -9,6 +9,8 @@ jobs:
   send_emails:
     runs-on: ubuntu-latest
     
+    # NOTICE: No 'services' block is needed. It connects directly to the cloud.
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,20 +22,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # STEP 2: Run email dispatch, connecting to the service container
       - name: Run email dispatch
         env:
-          # CORE CONFIGURATION: Uses the internal service name 'postgres' for the host
-          SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_user:ci_password@postgres:5432/ci_db
+          # CORE CONFIGURATION: PULLS LIVE URL FROM GITHUB SECRET
+          SQLALCHEMY_DATABASE_URL: ${{ secrets.SQLALCHEMY_DATABASE_URL }} 
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          # AWS SES/S3 CONFIGURATION (from GitHub Secrets)
+          # JWT/SECURITY KEYS (Must be present for Pydantic/imports)
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
+          # AWS SES/S3 CONFIGURATION (Must be present for Pydantic/script execution)
           EMAIL_FROM_ADDRESS: ${{ secrets.EMAIL_FROM_ADDRESS }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION_NAME: ${{ secrets.AWS_REGION_NAME }}
           
-        run: |
-          # The entire job will wait for the DB to be healthy before starting this step.
-          # The Python script will then execute, create the tables, and run the dispatch logic.
-          python app/scripts/daily_dispatch.py
+        run: python app/scripts/daily_dispatch.py
