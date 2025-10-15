@@ -23,6 +23,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+          --network-alias localhost # <--- FIX 1: Add network alias for reliable connection
 
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +35,10 @@ jobs:
 
       - name: Run tests
         env:
-          # Keep this as is for the application connection string:
-          SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_test_user:ci_test_password@postgres:5432/ci_test_db
+          # This now correctly uses the 'localhost' alias we created above
+          SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_test_user:ci_test_password@localhost:5432/ci_test_db
           
-          # FIX 1: Set PGPASSWORD for the pg_isready utility
+          # PGPASSWORD is set for the pg_isready utility
           PGPASSWORD: ci_test_password 
           
           JWT_SECRET_KEY: "super-secret-ci-key"
@@ -51,14 +52,14 @@ jobs:
         run: |
           echo "Waiting for Postgres to start..."
           
-          # FIX 2 & 3: Use explicit port (-p 5432) and remove the database name (-d)
+          # FIX 2: Use the 'localhost' alias here as well, along with explicit port (-p)
           for i in {1..15}; do
-            pg_isready -h postgres -p 5432 -U ci_test_user && break
+            pg_isready -h localhost -p 5432 -U ci_test_user && break
             echo "Postgres not ready yet ($i/15)..."
             sleep 3
           done
           
           # Final check before continuing
-          pg_isready -h postgres -p 5432 -U ci_test_user || (echo "Postgres failed to start" && exit 1)
+          pg_isready -h localhost -p 5432 -U ci_test_user || (echo "Postgres failed to start" && exit 1)
           
           pytest -v
