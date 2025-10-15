@@ -1,79 +1,67 @@
-version: "3.8"
+name: CI Pipeline
 
-services:
-  # -----------------------------------------------------------------
-  # 1. PostgreSQL Database Service
-  # -----------------------------------------------------------------
-  db:
-    image: postgres:15-alpine
-    container_name: postgres_db
-    # Environment variables are loaded from the .env file.
-    # Note: POSTGRES_PASSWORD is set directly here to 'password' in the .env,
-    # but the service also has an explicitly set environment variable below.
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      # The value 'password' must match the password used in the 'app' service connection string.
-      # You should update your .env file to match the password here, or update this to match your .env.
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB} # Hardcoded DB name inside the container
-    ports:
-      # Map the container port 5432 to host port 5433 for DBeaver access
-      # You can change the host port if 5432 is in use, e.g., "5433:5432"
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"] # Use env var
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-  # -----------------------------------------------------------------
-  # 2. FastAPI Application Service
-  # -----------------------------------------------------------------
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: fastapi_app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    environment:
-      # Use the Docker service name 'db' and the internal Postgres port 5432 for inter-container comms.
-      # This overrides the SQLALCHEMY_DATABASE_URL from .env which may point to a host/port
-      # intended for host-side tools (like DBeaver).
-      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      FINNHUB_API_KEY: ${FINNHUB_API_KEY}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION_NAME: ${AWS_REGION_NAME}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: on-failure
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: ci_test_user
+          POSTGRES_PASSWORD: ci_test_password
+          POSTGRES_DB: ci_test_db
+        ports:
+          - 5432:5432
+        # FIX 1: Add a host alias to ensure 'localhost' resolves to the service IP
+        options: >-
+          --health-cmd "pg_isready -U ci_test_user -d ci_test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+          --network-alias localhost # <--- FIX: Add network alias
+          
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-  email_dispatch:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: python -m app.scripts.daily_dispatch
-    environment:
-      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      AWS_REGION_NAME: ${AWS_REGION_NAME}
-    depends_on:
-      db:
-        condition: service_healthy
-
-volumes:
-  postgres_data:
+      - name: Run tests
+        env:
+          # Application still uses the service name, which is fine after the wait:
+          SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_test_user:ci_test_password@postgres:5432/ci_test_db
+          
+          # FIX 2: Set PGPASSWORD for the pg_isready utility
+          PGPASSWORD: ci_test_password 
+          
+          JWT_SECRET_KEY: "super-secret-ci-key"
+          JWT_ALGORITHM: "HS256"
+          FINNHUB_API_KEY: "dummy-finnhub-key"
+          EMAIL_FROM_ADDRESS: "ci@test.com"
+          S3_BUCKET_NAME: "ci-test-bucket"
+          AWS_ACCESS_KEY_ID: "dummy-key-id"
+          AWS_SECRET_ACCESS_KEY: "dummy-secret-key"
+          AWS_REGION_NAME: "us-east-1"
+        run: |
+          echo "Waiting for Postgres to start..."
+          
+          # FIX 3: Use the explicit IP/alias 'localhost' to bypass DNS timing issues
+          for i in {1..15}; do
+            # Use 'localhost' which now points to the service IP
+            pg_isready -h localhost -p 5432 -U ci_test_user && break
+            echo "Postgres not ready yet ($i/15)..."
+            sleep 3
+          done
+          
+          # Final check before continuing
+          pg_isready -h localhost -p 5432 -U ci_test_user || (echo "Postgres failed to start" && exit 1)
+          
+          pytest -v
