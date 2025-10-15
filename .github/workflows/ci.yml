@@ -23,7 +23,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-          --network-alias localhost # <--- FIX 1: Add network alias for reliable connection
+          --network-alias localhost
 
     steps:
       - uses: actions/checkout@v4
