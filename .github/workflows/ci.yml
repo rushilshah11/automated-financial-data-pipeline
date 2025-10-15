@@ -45,9 +45,9 @@ jobs:
           AWS_REGION_NAME: "us-east-1"
         run: |
           echo "Waiting for Postgres to start..."
-          for i in {1..15}; do
+          for i in {1..60}; do
             pg_isready -h postgres -U ci_test_user -d ci_test_db && break
-            echo "Postgres not ready yet ($i/15)..."
+            echo "Postgres not ready yet ($i/60)..."
             sleep 3
           done
           pg_isready -h postgres -U ci_test_user -d ci_test_db || (echo "Postgres failed to start" && exit 1)
