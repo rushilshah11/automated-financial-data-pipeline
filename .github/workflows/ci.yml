@@ -5,10 +5,25 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    
+    # STEP 1: Define the temporary database service for integration tests
+    services:
+      postgres:
+        image: postgres:15-alpine # Matches your docker-compose image
+        env:
+          # Temporary CI credentials
+          POSTGRES_USER: ci_test_user
+          POSTGRES_PASSWORD: ci_test_password
+          POSTGRES_DB: ci_test_db
+        options: >-
+          --health-cmd "pg_isready -U ci_test_user -d ci_test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+          --start-period 10s
 
     steps:
       - uses: actions/checkout@v4
@@ -21,5 +36,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # STEP 2: Inject all 9 required environment variables
       - name: Run tests
-        run: pytest
+        env:
+          # 1. DATABASE: Points to the temporary 'postgres' service
+          SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://ci_test_user:ci_test_password@postgres:5432/ci_test_db
+          
+          # 2. AWS/S3 (Dummy Values for CI): Satisfies Pydantic validation
+          S3_BUCKET_NAME: "ci-test-bucket"
+          AWS_ACCESS_KEY_ID: "dummy-key-id"
+          AWS_SECRET_ACCESS_KEY: "dummy-secret-key"
+          AWS_REGION_NAME: "us-east-1"
+          EMAIL_FROM_ADDRESS: "ci@test.com"
+          
+          # 3. FINNHUB/JWT (Dummy Values for CI): Satisfies Pydantic validation
+          FINNHUB_API_KEY: "dummy-finnhub-key"
+          JWT_SECRET_KEY: "super-secret-ci-key"
+          JWT_ALGORITHM: "HS256"
+          
+        run: pytest --cov=app tests/ --disable-warnings -q
