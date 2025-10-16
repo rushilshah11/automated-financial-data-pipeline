@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     TestClient enters the lifespan context.
     """
     # create tables (uses SQLAlchemy metadata.create_all under the hood)
-    # await create_tables()
+    await create_tables()
     yield
     # (optional) add graceful shutdown logic here
 
