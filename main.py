@@ -14,6 +14,7 @@ don't run expensive or blocking actions at import time.
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware 
 from app.util.init_db import create_tables  # async create_tables called by lifespan
 from fastapi.security import HTTPBearer
 from app.routers.auth import auth_router
@@ -41,6 +42,18 @@ app = FastAPI(
     version="1.0",
     swagger_ui_oauth2_redirect_url=None,
 )
+
+# --- NEW CORS CONFIGURATION ---
+# Allow all origins (for development/Render deployment flexibility).
+# Replace "*" with your actual frontend domain once you have it.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows requests from all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"], # Allows all headers (including Authorization)
+)
+# --- END CORS CONFIGURATION ---
 
 security = HTTPBearer()
 
