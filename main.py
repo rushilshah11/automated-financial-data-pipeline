@@ -48,6 +48,9 @@ security = HTTPBearer()
 app.include_router(router=auth_router, tags=["auth"], prefix="/auth")
 app.include_router(router=subscription_router, tags=["subscriptions"], prefix="/subscriptions")
 
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Automated Financial Data Pipeline API. Access docs at /docs."}
 
 @app.get("/health")
 async def health_check():
