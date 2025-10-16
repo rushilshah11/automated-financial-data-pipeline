@@ -61,5 +61,12 @@ jobs:
           
           # Final check before continuing
           pg_isready -h localhost -p 5432 -U ci_test_user || (echo "Postgres failed to start" && exit 1)
+
+          # 2. *** FIX: EXPLICITLY RUN DATABASE MIGRATION ***
+          echo "Running database migrations..."
+          python -c "from app.util.init_db import create_tables; import asyncio; asyncio.run(create_tables())"
+          
+          # 3. Run Pytest
+          echo "Running tests..."
           
           pytest -v
