@@ -48,7 +48,7 @@ app = FastAPI(
 # Replace "*" with your actual frontend domain once you have it.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows requests from all origins
+    allow_origins=["https://rushils-finance-dispatch.onrender.com"], # Allows requests from all origins
     allow_credentials=True,
     allow_methods=["*"], # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"], # Allows all headers (including Authorization)
