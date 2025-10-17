@@ -1,6 +1,7 @@
 # 📈 Automated Financial Data Pipeline
 
-This project demonstrates a robust, full-stack data and web application pipeline designed for collecting, processing, and distributing personalized financial updates to users.  
+This project demonstrates a robust, full-stack data and web application pipeline designed for collecting, processing, and distributing personalized financial updates to users. Primarly focuses on backend development (FastAPI, PostgreSQL, ETL pipeline), but includes a React frontend to visualize data, test endpoints, and understand the flow between frontend and backend services. It’s a learning tool for seeing how React interacts with API endpoints and how the full stack connects. 
+
 It showcases modern software engineering principles, cloud deployment readiness, and end-to-end data orchestration.
 
 ---
