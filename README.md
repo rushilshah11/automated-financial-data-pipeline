@@ -103,5 +103,5 @@ The backend is strictly divided into layers:
 
 ## 🧑‍💻 Author
 **Rushil Shah**  
-📫 [LinkedIn]([url](https://linkedin.com/in/rushilshahh)) 
+📫 [LinkedIn](https://linkedin.com/in/rushilshahh)
 💼 Portfolio
