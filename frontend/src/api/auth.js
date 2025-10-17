@@ -1,17 +1,20 @@
 // src/api/auth.js
+// Lightweight API wrappers for the backend endpoints used by the UI.
+// Keep network code in one place so UI components stay small and focused.
+
 import client from "./client";
 
+// Register a new user. `userData` should include first_name, last_name, email, password
 export const registerUser = (userData) => {
-  // Matches UserInRegister schema
   return client.post("/auth/register", userData);
 };
 
+// Login: sends email/password and expects a { token: '...' } response
 export const loginUser = (credentials) => {
-  // Expects UserInLogin schema
-  return client.post("/auth/login", credentials); // Returns UserWithToken {token: str}
+  return client.post("/auth/login", credentials);
 };
 
-// ... subscriptions functions (add, list, delete) follow the same pattern.
+// Subscriptions: CRUD helpers used by the Dashboard page
 export const addSubscription = (subscriptionData) => {
   return client.post("/subscriptions", subscriptionData);
 };

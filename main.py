@@ -21,6 +21,13 @@ from app.routers.auth import auth_router
 from app.routers.subscription import subscription_router
 from app.util.protect_route import get_current_user
 from app.db.schemas.user_schema import UserOutput
+from app.core.logging_config import configure_logging
+import logging
+from time import time
+
+# Configure logging as early as possible so import-time logs are captured
+configure_logging()
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,6 +49,17 @@ app = FastAPI(
     version="1.0",
     swagger_ui_oauth2_redirect_url=None,
 )
+
+
+# Simple request logging middleware – logs method, path, status and duration.
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start = time()
+    logger.info("Incoming request: %s %s", request.method, request.url.path)
+    response = await call_next(request)
+    duration_ms = int((time() - start) * 1000)
+    logger.info("Completed %s %s -> %s (%sms)", request.method, request.url.path, response.status_code, duration_ms)
+    return response
 
 # --- NEW CORS CONFIGURATION ---
 # Allow all origins (for development/Render deployment flexibility).

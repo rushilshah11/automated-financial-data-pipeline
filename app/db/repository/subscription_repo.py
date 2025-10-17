@@ -3,7 +3,11 @@ from app.db.repository.base import BaseRepository
 from app.db.models.subscription import Subscription
 from app.db.schemas.subscription_schema import SubscriptionAdd
 from typing import List
-from sqlalchemy import func, distinct # New imports needed for distinct
+from sqlalchemy import distinct
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class SubscriptionRepository(BaseRepository):
 	"""Repository for subscription-related DB operations.
@@ -18,6 +22,8 @@ class SubscriptionRepository(BaseRepository):
 		self.session.add(sub)
 		self.session.commit()
 		self.session.refresh(sub)
+		# logging: created
+		logger.info("Created subscription id=%s user_id=%s ticker=%s", sub.id, user_id, sub.ticker)
 		return sub
 
 	def get_subscription_by_id(self, sub_id: int) -> Subscription | None:
@@ -39,12 +45,14 @@ class SubscriptionRepository(BaseRepository):
 	def delete_subscription(self, sub: Subscription) -> None:
 		self.session.delete(sub)
 		self.session.commit()
+		logger.info("Deleted subscription id=%s", sub.id)
 
 	def delete_by_user_and_ticker(self, user_id: int, ticker: str) -> int:
 		"""Delete subscriptions for user/ticker and return number deleted."""
 		q = self.session.query(Subscription).filter_by(user_id=user_id, ticker=ticker.upper())
 		count = q.delete()
 		self.session.commit()
+		logger.info("Deleted %s rows for user_id=%s ticker=%s", count, user_id, ticker.upper())
 		return count
 
 	def check_ticker_by_user(self, user_id: int, ticker: str) -> bool:
@@ -55,8 +63,7 @@ class SubscriptionRepository(BaseRepository):
 			.first()
 		)
 		return bool(exists)
-    
-    # NEW METHOD
+
 	def get_all_unique_tickers(self) -> List[str]:
 		"""Return a list of all unique ticker symbols subscribed to."""
 		tickers = (

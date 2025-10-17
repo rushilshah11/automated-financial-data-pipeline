@@ -10,6 +10,9 @@ from fastapi import HTTPException
 import asyncio
 from typing import Any, Optional, Dict
 from app.core.integrations.finnhub_schema import StockQuoteOutput, CompanyProfileOutput
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FinnhubClient:
     """
@@ -24,6 +27,7 @@ class FinnhubClient:
         
     def __init__(self):
         api_key = settings.FINNHUB_API_KEY
+        logger.info("Initializing Finnhub client")
         self.client = finnhub.Client(api_key=api_key)
     
     async def run_sync_call(self, func, *args, **kwargs):
@@ -51,6 +55,7 @@ class FinnhubClient:
         """
         try:
             # call the blocking library off the event loop
+            logger.debug("Fetching stock quote for %s", symbol.upper())
             quote = await self.run_sync_call(self.client.quote, symbol.upper())
             if not quote or quote.get('c') == 0:
                 raise HTTPException(status_code=404, detail=f"Quote for symbol '{symbol}' not found.")
@@ -60,7 +65,10 @@ class FinnhubClient:
                 return StockQuoteOutput.model_validate(quote)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Coult not validate Pydantic StockQuote Schema: {e}")
+        except HTTPException:
+            raise
         except Exception as e:
+            logger.exception("Finnhub quote fetch failed for %s: %s", symbol, e)
             raise HTTPException(status_code=500, detail=f"Finnhub quote fetch failed: {e}")
 
 
@@ -82,6 +90,7 @@ class FinnhubClient:
         """
 
         try:
+            logger.debug("Fetching company profile for %s", symbol.upper())
             profile = await self.run_sync_call(self.client.company_profile2, symbol=symbol.upper())
             if not profile or profile.get('name') is None:
                 raise HTTPException(status_code=404, detail=f"Profile for symbol '{symbol}' not found.")
@@ -89,7 +98,10 @@ class FinnhubClient:
                 return CompanyProfileOutput.model_validate(profile)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Coult not validate Pydantic CompanyProfile Schema: {e}")
+        except HTTPException:
+            raise
         except Exception as e:
+            logger.exception("Finnhub profile fetch failed for %s: %s", symbol, e)
             raise HTTPException(status_code=500, detail=f"Finnhub profile fetch failed: {e}")
 
 

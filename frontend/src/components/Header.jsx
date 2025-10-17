@@ -1,3 +1,8 @@
+// src/components/Header.jsx
+// Small top navigation shown on every page. It reads auth state via
+// the `useAuth` hook and shows different links depending on whether the
+// user is logged in.
+
 import React from "react";
 import { Link } from "react-router-dom";
 import useAuth from "../hooks/useAuth";

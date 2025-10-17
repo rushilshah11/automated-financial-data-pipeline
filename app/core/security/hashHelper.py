@@ -7,6 +7,9 @@ work factor) in one place.
 """
 
 from bcrypt import checkpw, gensalt, hashpw
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class HashHelper(object):
@@ -19,9 +22,14 @@ class HashHelper(object):
     @staticmethod
     def get_password_hash(password: str) -> str:
         # bcrypt returns bytes; decode to store as text in the DB
-        return hashpw(password.encode('utf-8'), gensalt()).decode('utf-8')
+        hashed = hashpw(password.encode('utf-8'), gensalt()).decode('utf-8')
+        # Log only non-sensitive metadata: hash length
+        logger.debug("Generated password hash (len=%s)", len(hashed))
+        return hashed
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         # checkpw expects both args as bytes
-        return checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        ok = checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        logger.debug("Password verification result: %s", ok)
+        return ok

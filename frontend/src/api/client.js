@@ -1,6 +1,12 @@
 // src/api/client.js
+// Centralized axios instance used across the frontend.
+// Reasons for a single axios instance:
+// - Configure baseURL in one place.
+// - Add request/response interceptors (attach tokens, refresh logic).
+// - Easier to mock in tests.
+
 import axios from "axios";
-import { API_BASE_URL } from "./config"; // Assume you set this up
+import { API_BASE_URL } from "./config"; // Reads from Vite env (VITE_API_URL)
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -9,23 +15,22 @@ const client = axios.create({
   },
 });
 
-// Request Interceptor: Attach JWT token to all outgoing requests
+// Request interceptor attaches the JWT from localStorage to outgoing requests.
+// This means UI components don't need to manually add the Authorization header.
 client.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("jwtToken"); // Get token from storage
+    const token = localStorage.getItem("jwtToken");
+    // Don't attach token to login/register requests (they don't need it)
     if (
       token &&
-      config.url !== "/auth/login" &&
-      config.url !== "/auth/register"
+      !config.url.includes("/auth/login") &&
+      !config.url.includes("/auth/register")
     ) {
-      // Attach token ONLY if it's a protected route
-      config.headers.Authorization = `Bearer ${token}`; //
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default client;

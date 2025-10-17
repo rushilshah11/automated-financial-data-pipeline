@@ -10,6 +10,9 @@ from app.db.schemas.user_schema import UserInRegister, UserInLogin, UserWithToke
 from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.service.user_service import UserService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 auth_router = APIRouter()
@@ -24,10 +27,10 @@ async def login(loginDetails: UserInLogin, session: Session = Depends(get_db)):
     """
     try:
         user_service = UserService(session)
+        logger.info("Login request for email=%s", loginDetails.email)
         return user_service.login_user(login_details=loginDetails)
     except Exception as e:
-        # For development we print errors; in production use structured logging
-        print(f"Error during login: {e}")
+        logger.exception("Error during login for email=%s: %s", getattr(loginDetails, 'email', None), e)
         raise e
 
 
@@ -39,9 +42,10 @@ async def register(registerDetails: UserInRegister, session: Session = Depends(g
     """
     try:
         user_service = UserService(session)
+        logger.info("Register request for email=%s", registerDetails.email)
         return user_service.register_user(user_details=registerDetails)
     except Exception as e:
-        print(f"Error during registration: {e}")
+        logger.exception("Error during registration for email=%s: %s", getattr(registerDetails, 'email', None), e)
         raise e
 
 # Typical call flow: router -> service -> repository -> DB

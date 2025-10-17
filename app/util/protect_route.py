@@ -15,6 +15,9 @@ from app.core.security.authHandler import AuthHandler
 from app.service.user_service import UserService
 from app.core.database import get_db
 from app.db.schemas.user_schema import UserOutput
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 security = HTTPBearer()
@@ -41,6 +44,7 @@ def get_current_user(
 
         if payload and payload.get("user_id"):
             try:
+                logger.debug("Decoded token for user_id=%s", payload["user_id"])
                 user = UserService(session=session).get_user_by_id(payload["user_id"])
                 # Return a Pydantic object (safe for JSON serialization)
                 return UserOutput(
@@ -50,7 +54,7 @@ def get_current_user(
                     email=user.email
                 )
             except Exception as e:
-                print(f"Error fetching user: {e}")
+                logger.exception("Error fetching user for id=%s: %s", payload.get("user_id"), e)
                 raise e
             
     except Exception:

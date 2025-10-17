@@ -7,6 +7,9 @@ from app.util.protect_route import get_current_user
 from app.db.schemas.user_schema import UserOutput
 from app.db.schemas.subscription_schema import SubscriptionAdd, SubscriptionOutput
 from app.service.subscription_service import SubscriptionService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 subscription_router = APIRouter()
@@ -24,7 +27,9 @@ def create_subscription(
     ignored in favor of the authenticated user's id.
     """
     service = SubscriptionService(session=session)
+    logger.info("Create subscription request by user_id=%s ticker=%s", current_user.id, payload.ticker)
     sub = service.subscribe(user_id=current_user.id, payload=payload)
+    logger.info("Created subscription id=%s for user_id=%s", sub.id, current_user.id)
     # Pydantic's orm_mode allows returning the SQLAlchemy model directly
     return sub
 
@@ -37,6 +42,7 @@ def list_subscriptions(
     """List subscriptions belonging to the authenticated user."""
     service = SubscriptionService(session=session)
     subs = service.list_user_subscriptions(user_id=current_user.id)
+    logger.info("Listed %s subscriptions for user_id=%s", len(subs), current_user.id)
     return subs
 
 
@@ -53,4 +59,5 @@ def delete_subscription(
     """
     service = SubscriptionService(session=session)
     count = service.unsubscribe(user_id=current_user.id, ticker=ticker)
+    logger.info("Unsubscribed user_id=%s from ticker=%s (deleted=%s)", current_user.id, ticker, count)
     return {"deleted": count}

@@ -13,6 +13,9 @@ from app.core.security.hashHelper import HashHelper
 from app.core.security.authHandler import AuthHandler
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
@@ -34,9 +37,11 @@ class UserService:
             )
 
         # Hash the plaintext password and store the hash in the model
+        logger.info("Registering user: %s", user_details.email)
         hashed_password = HashHelper.get_password_hash(password=user_details.password)
         user_details.password = hashed_password
         new_user = self.__userRepo.create_user(user_data=user_details)
+        logger.info("Registered user id=%s email=%s", new_user.id, new_user.email)
         return new_user
 
     def login_user(self, login_details: UserInLogin) -> UserWithToken:
@@ -51,7 +56,7 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid email or password. Create Account!"
             )
-
+        logger.info("Login attempt for email=%s", login_details.email)
         user = self.__userRepo.get_user_by_email(email=login_details.email)
         # verify_password compares plaintext with stored bcrypt hash
         if not HashHelper.verify_password(plain_password=login_details.password, hashed_password=user.password):
@@ -62,8 +67,7 @@ class UserService:
 
         token = AuthHandler.encode_token(user_id=user.id)
         if token:
-            # Note: response model expects user+token; current implementation
-            # returns only token in some versions — update tests accordingly.
+            logger.info("Login successful for user_id=%s", user.id)
             return UserWithToken(token=token)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

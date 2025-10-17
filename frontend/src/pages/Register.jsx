@@ -1,3 +1,8 @@
+// src/pages/Register.jsx
+// Simple registration form. The backend expects fields matching the
+// UserInRegister schema: first_name, last_name, email, password.
+// After successful registration this sample app navigates to the login page.
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";

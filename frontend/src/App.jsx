@@ -1,3 +1,8 @@
+// src/App.jsx - application root and routing
+// This file defines the high-level routes and wraps the app with the
+// AuthProvider. If you're new to React, think of this as the app's
+// "index of pages" where URLs map to components.
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import useAuth from "./hooks/useAuth";

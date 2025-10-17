@@ -1,3 +1,7 @@
+// src/pages/Dashboard.jsx
+// The Dashboard shows the user's subscriptions and allows adding/removing
+// them. It uses the API helper functions defined in src/api/auth.js.
+
 import React, { useState, useEffect } from "react";
 import {
   addSubscription,

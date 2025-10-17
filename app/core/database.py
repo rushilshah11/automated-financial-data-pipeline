@@ -10,6 +10,9 @@ per-request and ensure it is closed afterwards.
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.settings import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Read the database URL from settings (loaded from environment/.env)
@@ -30,7 +33,9 @@ def get_db():
     signatures to guarantee proper session lifecycle per request.
     """
     db = SessionLocal()
+    logger.debug("Opened new DB session %s", db)
     try:
         yield db
     finally:
         db.close()
+        logger.debug("Closed DB session %s", db)
