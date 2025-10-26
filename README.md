@@ -1,6 +1,8 @@
 # 📈 Automated Financial Data Pipeline
 
-The Automated Financial Data Pipeline is a full-stack system designed to automatically collect, process, and deliver personalized financial updates to users. The project focuses on building reliable backend automation, ensuring data flows seamlessly from collection (via financial APIs) to processing (calculating insights) and finally to delivery (personalized user updates). A lightweight React web interface is included to visualize the results, test features, and understand how the user-facing side connects to the backend. It also showcases modern software engineering principles, cloud deployment readiness, and end-to-end data orchestration.
+The Automated Financial Data Pipeline is a full-stack system designed to automatically collect, process, and deliver personalized financial updates to users. The project focuses on building reliable backend automation, ensuring data flows seamlessly from collection (via financial APIs) to processing (calculating insights) and finally to delivery (personalized user updates). 
+
+A lightweight React web interface is included to visualize the results, test features, and understand how the user-facing side connects to the backend. It also showcases modern software engineering principles, cloud deployment readiness, and end-to-end data orchestration.
 
 ---
 
