@@ -1,8 +1,8 @@
 name: Daily Email Dispatch
 
 on:
-  schedule:
-    - cron: '0 20 * * *'  # 8 PM UTC = 4 PM EST
+  # schedule:
+  #   - cron: '0 20 * * *'  # 8 PM UTC = 4 PM EST
   workflow_dispatch:       # allows manual trigger
 
 jobs:
